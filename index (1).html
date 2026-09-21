@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CharTech — LIFF Test</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b;
+    --line: #e2e2e2; --ok: #1a7f37; --bad: #b42318; --card: #f7f7f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141414; --fg: #f0f0f0; --muted: #a0a0a0;
+      --line: #2e2e2e; --card: #1f1f1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.6; max-width: 640px; margin-inline: auto;
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px; margin-bottom: 12px;
+  }
+  .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .value { font-size: 0.95rem; word-break: break-all; margin-top: 3px; font-family: ui-monospace, Menlo, monospace; }
+  .ok { color: var(--ok); font-weight: 600; }
+  .bad { color: var(--bad); font-weight: 600; }
+  img.avatar { width: 56px; height: 56px; border-radius: 50%; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>CharTech — LIFF Test</h1>
+<div class="sub">หน้าทดสอบระบบ / Diagnostic page. Not the order form.</div>
+
+<div class="card"><div class="label">1 · LIFF Status</div><div class="value" id="status">initialising…</div></div>
+<div class="card"><div class="label">2 · Opened inside LINE?</div><div class="value" id="inclient">—</div></div>
+<div class="card"><div class="label">3 · Logged in?</div><div class="value" id="loggedin">—</div></div>
+<div class="card"><div class="label">4 · User ID</div><div class="value" id="userid">—</div></div>
+<div class="card"><div class="label">5 · ID Token (signed by LINE)</div><div class="value" id="idtoken">—</div></div>
+<div class="card"><div class="label">6 · Display name</div><div class="value" id="name">—</div><img class="avatar" id="pic" style="display:none" alt=""></div>
+<div class="card"><div class="label">7 · OS / LIFF version</div><div class="value" id="env">—</div></div>
+
+<script>
+const LIFF_ID = "PASTE_YOUR_LIFF_ID_HERE";
+
+const $ = (id) => document.getElementById(id);
+const ok  = (t) => '<span class="ok">'  + t + '</span>';
+const bad = (t) => '<span class="bad">' + t + '</span>';
+
+async function main() {
+  if (LIFF_ID.indexOf("PASTE") === 0) {
+    $("status").innerHTML = bad("LIFF ID not set yet — this is expected before step 10.6");
+    return;
+  }
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    $("status").innerHTML = ok("init OK");
+
+    const inClient = liff.isInClient();
+    $("inclient").innerHTML = inClient ? ok("yes") : bad("no — opened in a normal browser");
+    $("env").textContent = liff.getOS() + " / LIFF " + liff.getVersion();
+
+    if (!liff.isLoggedIn()) {
+      $("loggedin").innerHTML = bad("no");
+      if (!inClient) liff.login();
+      return;
+    }
+    $("loggedin").innerHTML = ok("yes");
+
+    const profile = await liff.getProfile();
+    $("userid").innerHTML = ok(profile.userId);
+    $("name").textContent = profile.displayName;
+    if (profile.pictureUrl) { $("pic").src = profile.pictureUrl; $("pic").style.display = "block"; }
+
+    const idToken = liff.getIDToken();
+    $("idtoken").innerHTML = idToken
+      ? ok("present — " + idToken.length + " chars, starts " + idToken.substring(0, 12) + "…")
+      : bad("missing — tick the openid scope in the LIFF settings");
+  } catch (err) {
+    $("status").innerHTML = bad(String(err));
+  }
+}
+main();
+</script>
+</body>
+</html>
