@@ -2,94 +2,274 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CharTech — LIFF Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CharTech — สั่งซื้อสินค้า</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
-  :root {
-    --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b;
-    --line: #e2e2e2; --ok: #1a7f37; --bad: #b42318; --card: #f7f7f5;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #141414; --fg: #f0f0f0; --muted: #a0a0a0;
-      --line: #2e2e2e; --card: #1f1f1f;
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; padding: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg); color: var(--fg);
-    line-height: 1.6; max-width: 640px; margin-inline: auto;
-  }
-  h1 { font-size: 1.3rem; margin: 0 0 4px; }
-  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
-  .card {
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 10px; padding: 14px; margin-bottom: 12px;
-  }
-  .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-  .value { font-size: 0.95rem; word-break: break-all; margin-top: 3px; font-family: ui-monospace, Menlo, monospace; }
-  .ok { color: var(--ok); font-weight: 600; }
-  .bad { color: var(--bad); font-weight: 600; }
-  img.avatar { width: 56px; height: 56px; border-radius: 50%; margin-top: 8px; }
+:root{
+  --bg:#ffffff; --fg:#1b1b19; --muted:#6f6f68; --line:#e4e4df;
+  --card:#faf9f6; --accent:#2f6b3f; --accent-fg:#ffffff;
+  --warn-bg:#fff6e5; --warn-fg:#8a5a00; --danger:#b42318;
+  --pad-t:env(safe-area-inset-top,0px); --pad-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141412; --fg:#f0efea; --muted:#9d9d95; --line:#2d2d29;
+  --card:#1e1e1b; --accent:#57a06a; --accent-fg:#0d1a10;
+  --warn-bg:#3a2e14; --warn-fg:#f0c674;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;
+  line-height:1.5;display:flex;flex-direction:column;padding-top:var(--pad-t)}
+header{position:sticky;top:var(--pad-t);z-index:10;background:var(--bg);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 14px}
+#back{border:0;background:none;color:var(--fg);font-size:1.4rem;padding:2px 6px;cursor:pointer;visibility:hidden}
+#title{flex:1;font-weight:600;font-size:1rem;margin:0}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--fg);
+  border-radius:999px;padding:4px 10px;font-size:.78rem;cursor:pointer}
+#cartBtn{position:relative;background:var(--accent);color:var(--accent-fg);border:0;
+  border-radius:999px;padding:6px 12px;font-size:.82rem;font-weight:600;cursor:pointer}
+#cartCount{font-variant-numeric:tabular-nums}
+main{flex:1;overflow-y:auto;padding:14px 14px calc(20px + var(--pad-b))}
+.row{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;
+  gap:12px;cursor:pointer;color:var(--fg);font-size:.95rem}
+.row:active{transform:scale(.99)}
+.row .grow{flex:1;min-width:0}
+.row .sub{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
+.row .price{font-weight:600;white-space:nowrap}
+.row .arrow{color:var(--muted)}
+.notice{background:var(--warn-bg);color:var(--warn-fg);border-radius:10px;
+  padding:10px 12px;font-size:.82rem;margin-bottom:12px}
+.qtyWrap{text-align:center;padding:20px 0}
+.qtyName{font-size:1.05rem;font-weight:600}
+.qtyPrice{color:var(--muted);margin:4px 0 22px}
+.stepper{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:22px}
+.stepper button{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);
+  background:var(--card);color:var(--fg);font-size:1.6rem;cursor:pointer}
+.stepper input{width:88px;height:52px;text-align:center;font-size:1.3rem;font-weight:600;
+  border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
+.primary{width:100%;background:var(--accent);color:var(--accent-fg);border:0;border-radius:12px;
+  padding:15px;font-size:1rem;font-weight:600;cursor:pointer}
+.primary[disabled]{opacity:.45}
+.ghost{width:100%;background:none;color:var(--fg);border:1px solid var(--line);
+  border-radius:12px;padding:13px;font-size:.95rem;margin-top:10px;cursor:pointer}
+.cartItem{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.cartItem .grow{flex:1;min-width:0}
+.cartItem .nm{font-size:.9rem}
+.cartItem .sub{color:var(--muted);font-size:.78rem}
+.mini{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--card);color:var(--fg);font-size:1.1rem;cursor:pointer}
+.miniQty{min-width:26px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.totals{margin-top:16px;padding-top:14px;border-top:2px solid var(--line);
+  display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:50px 0}
+.rm{color:var(--danger);background:none;border:0;font-size:.78rem;cursor:pointer;padding:4px}
 </style>
 </head>
 <body>
 
-<h1>CharTech — LIFF Test</h1>
-<div class="sub">หน้าทดสอบระบบ / Diagnostic page. Not the order form.</div>
+<header>
+  <button id="back" aria-label="back">&#8249;</button>
+  <h1 id="title">CharTech</h1>
+  <button class="chip" id="langBtn">EN</button>
+  <button id="cartBtn">&#128722; <span id="cartCount">0</span></button>
+</header>
 
-<div class="card"><div class="label">1 · LIFF Status</div><div class="value" id="status">initialising…</div></div>
-<div class="card"><div class="label">2 · Opened inside LINE?</div><div class="value" id="inclient">—</div></div>
-<div class="card"><div class="label">3 · Logged in?</div><div class="value" id="loggedin">—</div></div>
-<div class="card"><div class="label">4 · User ID</div><div class="value" id="userid">—</div></div>
-<div class="card"><div class="label">5 · ID Token (signed by LINE)</div><div class="value" id="idtoken">—</div></div>
-<div class="card"><div class="label">6 · Display name</div><div class="value" id="name">—</div><img class="avatar" id="pic" style="display:none" alt=""></div>
-<div class="card"><div class="label">7 · OS / LIFF version</div><div class="value" id="env">—</div></div>
+<main id="main"><div class="empty" id="boot">กำลังโหลด… / Loading…</div></main>
 
 <script>
-const LIFF_ID = "2011686391-JIg8JWF5";
+/* ============ PASTE YOUR TWO VALUES HERE ============ */
+const LIFF_ID     = "PASTE_YOUR_LIFF_ID_HERE";
+const CATALOGUE_URL = "PASTE_YOUR_CATALOGUE_CSV_URL_HERE";
+/* =================================================== */
 
-const $ = (id) => document.getElementById(id);
-const ok  = (t) => '<span class="ok">'  + t + '</span>';
-const bad = (t) => '<span class="bad">' + t + '</span>';
+/* Fallback catalogue — used only if the live fetch fails.
+   Order: sku, groupTH, groupEN, lineTH, lineEN, optTH, optEN, price, weight, sort */
+const FALLBACK = [
+["CH-N-1","ถ่าน","Charcoal","ถ่านไม้ธรรมชาติ","Natural lump","1 กก.","1 kg",39.5,1.2,101],
+["CH-N-5","ถ่าน","Charcoal","ถ่านไม้ธรรมชาติ","Natural lump","5 กก.","5 kg",159,5.5,102],
+["CH-N-10","ถ่าน","Charcoal","ถ่านไม้ธรรมชาติ","Natural lump","10 กก.","10 kg",290,10.8,103],
+["CH-B-1","ถ่าน","Charcoal","ถ่านอัดแท่ง","Briquette","1 กก.","1 kg",35,1.2,111],
+["CH-B-5","ถ่าน","Charcoal","ถ่านอัดแท่ง","Briquette","5 กก.","5 kg",140,5.5,112],
+["CH-B-10","ถ่าน","Charcoal","ถ่านอัดแท่ง","Briquette","10 กก.","10 kg",240,10.8,113],
+["CH-B-20","ถ่าน","Charcoal","ถ่านอัดแท่ง","Briquette","20 กก.","20 kg",380,21,114],
+["WV-500","น้ำส้มควันไม้","Wood vinegar","บริสุทธิ์ 100%","Pure 100%","500 มล.","500 ml",89,0.6,201],
+["WV-1000","น้ำส้มควันไม้","Wood vinegar","บริสุทธิ์ 100%","Pure 100%","1 ลิตร","1 L",149,1.1,202],
+["WV-5L","น้ำส้มควันไม้","Wood vinegar","บริสุทธิ์ 100%","Pure 100%","ถัง 5 ลิตร","5 L jug",450,5.4,203],
+["WV-20L","น้ำส้มควันไม้","Wood vinegar","บริสุทธิ์ 100%","Pure 100%","แกลลอน 20 ลิตร","20 L jerrycan",790,21.6,204],
+["WV-200L","น้ำส้มควันไม้","Wood vinegar","บริสุทธิ์ 100%","Pure 100%","ถัง 200 ลิตร","200 L drum",5500,213,205],
+["WV-SPR-500","น้ำส้มควันไม้","Wood vinegar","สเปรย์พร้อมใช้","Ready spray","500 มล.","500 ml",149,0.6,211],
+["CH-OD-200","ถ่านพิเศษ","Specialty","ถ่านดูดกลิ่น","Odour absorbing","200 กรัม","200 g",79,0.3,301],
+["CH-WF-1","ถ่านพิเศษ","Specialty","ถ่านกรองน้ำ","Water filtration","1 กก.","1 kg",139,1.2,311],
+["ASH-1","ถ่านพิเศษ","Specialty","ขี้เถ้าไม้","Wood ash","1 กก.","1 kg",45,1.2,321],
+["SOIL-5","สวน","Garden","ดินปลูก","Potting soil","5 กก.","5 kg",65,5.4,401],
+["SEED-1","สวน","Garden","กล้าไม้","Seedling","1 ต้น","1 plant",50,1,411],
+["HY-CIT-250","สวน","Garden","น้ำกลั่นสมุนไพร","Hydrosol","ตะไคร้หอม 250 มล.","Citronella 250 ml",139,0.35,421],
+["HY-ROS-250","สวน","Garden","น้ำกลั่นสมุนไพร","Hydrosol","โรสแมรี่ 250 มล.","Rosemary 250 ml",179,0.35,422]
+];
 
-async function main() {
-  if (LIFF_ID.indexOf("PASTE") === 0) {
-    $("status").innerHTML = bad("LIFF ID not set yet — this is expected before step 10.6");
-    return;
+const T = {
+  th:{pick:"เลือกหมวดสินค้า",picktype:"เลือกประเภท",picksize:"เลือกขนาด",qty:"จำนวน",
+      cart:"ตะกร้าสินค้า",add:"ใส่ตะกร้า",cont:"เลือกสินค้าต่อ",checkout:"ดำเนินการสั่งซื้อ",
+      empty:"ยังไม่มีสินค้าในตะกร้า",total:"รวม",each:"ต่อชิ้น",items:"รายการ",
+      offline:"ใช้ราคาสำรอง ราคาจริงจะยืนยันอีกครั้งทางแชท",
+      nol:"เปิดจากแอป LINE เพื่อสั่งซื้อ",soon:"ขั้นตอนถัดไปจะเปิดใช้เร็วๆ นี้",rm:"ลบ"},
+  en:{pick:"Choose a category",picktype:"Choose a type",picksize:"Choose a size",qty:"Quantity",
+      cart:"Your cart",add:"Add to cart",cont:"Keep shopping",checkout:"Continue to checkout",
+      empty:"Your cart is empty",total:"Total",each:"each",items:"items",
+      offline:"Using backup prices. Final price confirmed in chat.",
+      nol:"Open inside LINE to place an order",soon:"Next step coming soon",rm:"Remove"}
+};
+
+const S = {lang:"th", screen:"groups", group:null, line:null, sku:null, qty:1,
+           rows:[], cart:[], offline:false, profile:null};
+
+const $ = (id)=>document.getElementById(id);
+const t = (k)=>T[S.lang][k];
+const baht = (n)=>"฿"+n.toLocaleString("en-US",{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2});
+const esc = (s)=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function parseCSV(txt){
+  const out=[]; let row=[], cur="", q=false;
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(q){ if(c==='"'){ if(txt[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else if(c==='"') q=true;
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"){ row.push(cur); out.push(row); row=[]; cur=""; }
+    else if(c!=="\r") cur+=c;
   }
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    $("status").innerHTML = ok("init OK");
+  if(cur!==""||row.length){ row.push(cur); out.push(row); }
+  return out;
+}
 
-    const inClient = liff.isInClient();
-    $("inclient").innerHTML = inClient ? ok("yes") : bad("no — opened in a normal browser");
-    $("env").textContent = liff.getOS() + " / LIFF " + liff.getVersion();
+function toRows(arr){
+  return arr.filter(r=>r.length>=10 && r[0] && r[0]!=="SKU").map(r=>({
+    sku:r[0], gTH:r[1], gEN:r[2], lTH:r[3], lEN:r[4], oTH:r[5], oEN:r[6],
+    price:parseFloat(String(r[7]).replace(/[^0-9.]/g,""))||0,
+    weight:parseFloat(r[8])||0, sort:parseInt(r[9],10)||999
+  })).sort((a,b)=>a.sort-b.sort);
+}
 
-    if (!liff.isLoggedIn()) {
-      $("loggedin").innerHTML = bad("no");
-      if (!inClient) liff.login();
-      return;
-    }
-    $("loggedin").innerHTML = ok("yes");
-
-    const profile = await liff.getProfile();
-    $("userid").innerHTML = ok(profile.userId);
-    $("name").textContent = profile.displayName;
-    if (profile.pictureUrl) { $("pic").src = profile.pictureUrl; $("pic").style.display = "block"; }
-
-    const idToken = liff.getIDToken();
-    $("idtoken").innerHTML = idToken
-      ? ok("present — " + idToken.length + " chars, starts " + idToken.substring(0, 12) + "…")
-      : bad("missing — tick the openid scope in the LIFF settings");
-  } catch (err) {
-    $("status").innerHTML = bad(String(err));
+async function loadCatalogue(){
+  try{
+    if(CATALOGUE_URL.indexOf("PASTE")===0) throw new Error("no url");
+    const res = await fetch(CATALOGUE_URL,{cache:"no-store"});
+    if(!res.ok) throw new Error(res.status);
+    const rows = toRows(parseCSV(await res.text()));
+    if(!rows.length) throw new Error("empty");
+    S.rows = rows;
+  }catch(e){
+    S.offline = true;
+    S.rows = toRows(FALLBACK.map(r=>r.map(String)));
   }
 }
-main();
+
+const groups = ()=>{const s=new Set(),o=[];S.rows.forEach(r=>{if(!s.has(r.gEN)){s.add(r.gEN);o.push(r);}});return o;};
+const lines  = (g)=>{const s=new Set(),o=[];S.rows.filter(r=>r.gEN===g).forEach(r=>{if(!s.has(r.lEN)){s.add(r.lEN);o.push(r);}});return o;};
+const opts   = (g,l)=>S.rows.filter(r=>r.gEN===g&&r.lEN===l);
+const gName  = (r)=>S.lang==="th"?r.gTH:r.gEN;
+const lName  = (r)=>S.lang==="th"?r.lTH:r.lEN;
+const oName  = (r)=>S.lang==="th"?r.oTH:r.oEN;
+const full   = (r)=>lName(r)+" · "+oName(r);
+const cartQty= ()=>S.cart.reduce((n,i)=>n+i.qty,0);
+const cartSum= ()=>S.cart.reduce((n,i)=>n+i.qty*i.price,0);
+
+function go(screen){ S.screen=screen; render(); }
+
+function addToCart(){
+  const r = S.rows.find(x=>x.sku===S.sku);
+  const ex = S.cart.find(i=>i.sku===S.sku);
+  if(ex) ex.qty += S.qty; else S.cart.push({sku:r.sku,name:full(r),price:r.price,weight:r.weight,qty:S.qty});
+  S.qty=1; go("cart");
+}
+function bump(sku,d){
+  const i=S.cart.find(x=>x.sku===sku); if(!i) return;
+  i.qty+=d; if(i.qty<1) S.cart=S.cart.filter(x=>x.sku!==sku);
+  render();
+}
+
+function render(){
+  const m=$("main"); let h="";
+  $("langBtn").textContent = S.lang==="th" ? "EN" : "ไทย";
+  $("cartCount").textContent = cartQty();
+  $("back").style.visibility = (S.screen==="groups") ? "hidden" : "visible";
+
+  const banner = S.offline ? '<div class="notice">'+t("offline")+'</div>' : "";
+
+  if(S.screen==="groups"){
+    $("title").textContent = t("pick");
+    h = banner + groups().map(r=>
+      '<button class="row" onclick="pickGroup(\''+r.gEN+'\')"><span class="grow">'+esc(gName(r))+'</span><span class="arrow">&#8250;</span></button>').join("");
+  }
+  else if(S.screen==="lines"){
+    $("title").textContent = t("picktype");
+    h = lines(S.group).map(r=>
+      '<button class="row" onclick="pickLine(\''+r.lEN.replace(/'/g,"\\'")+'\')"><span class="grow">'+esc(lName(r))+'</span><span class="arrow">&#8250;</span></button>').join("");
+  }
+  else if(S.screen==="options"){
+    $("title").textContent = t("picksize");
+    h = opts(S.group,S.line).map(r=>
+      '<button class="row" onclick="pickSku(\''+r.sku+'\')"><span class="grow">'+esc(oName(r))+
+      '<span class="sub">'+esc(r.weight)+' kg</span></span><span class="price">'+baht(r.price)+'</span><span class="arrow">&#8250;</span></button>').join("");
+  }
+  else if(S.screen==="qty"){
+    const r=S.rows.find(x=>x.sku===S.sku);
+    $("title").textContent = t("qty");
+    h = '<div class="qtyWrap"><div class="qtyName">'+esc(full(r))+'</div>'+
+        '<div class="qtyPrice">'+baht(r.price)+' '+t("each")+'</div>'+
+        '<div class="stepper"><button onclick="setQty(-1)">&minus;</button>'+
+        '<input id="qtyIn" type="number" inputmode="numeric" min="1" value="'+S.qty+'" onchange="typeQty(this.value)">'+
+        '<button onclick="setQty(1)">+</button></div>'+
+        '<button class="primary" onclick="addToCart()">'+t("add")+' &middot; '+baht(r.price*S.qty)+'</button></div>';
+  }
+  else if(S.screen==="cart"){
+    $("title").textContent = t("cart");
+    if(!S.cart.length){ h='<div class="empty">'+t("empty")+'</div><button class="ghost" onclick="go(\'groups\')">'+t("cont")+'</button>'; }
+    else{
+      h = banner + S.cart.map(i=>
+        '<div class="cartItem"><span class="grow"><span class="nm">'+esc(i.name)+'</span>'+
+        '<span class="sub">'+baht(i.price)+' '+t("each")+' &middot; <button class="rm" onclick="bump(\''+i.sku+'\',-999)">'+t("rm")+'</button></span></span>'+
+        '<button class="mini" onclick="bump(\''+i.sku+'\',-1)">&minus;</button>'+
+        '<span class="miniQty">'+i.qty+'</span>'+
+        '<button class="mini" onclick="bump(\''+i.sku+'\',1)">+</button>'+
+        '<span class="price">'+baht(i.qty*i.price)+'</span></div>').join("")
+        + '<div class="totals"><span>'+t("total")+'</span><span>'+baht(cartSum())+'</span></div>'
+        + '<div style="margin-top:18px"><button class="primary" onclick="alert(t_soon())">'+t("checkout")+'</button>'
+        + '<button class="ghost" onclick="go(\'groups\')">'+t("cont")+'</button></div>';
+    }
+  }
+  m.innerHTML = h;
+}
+
+function t_soon(){ return t("soon"); }
+function pickGroup(g){ S.group=g; const l=lines(g); if(l.length===1){ pickLine(l[0].lEN); } else go("lines"); }
+function pickLine(l){ S.line=l; const o=opts(S.group,l); if(o.length===1){ pickSku(o[0].sku); } else go("options"); }
+function pickSku(s){ S.sku=s; S.qty=1; go("qty"); }
+function setQty(d){ S.qty=Math.max(1,S.qty+d); render(); }
+function typeQty(v){ const n=parseInt(v,10); S.qty=(isNaN(n)||n<1)?1:n; render(); }
+
+$("back").onclick=()=>{
+  if(S.screen==="cart") go("groups");
+  else if(S.screen==="qty") go(opts(S.group,S.line).length>1?"options":(lines(S.group).length>1?"lines":"groups"));
+  else if(S.screen==="options") go(lines(S.group).length>1?"lines":"groups");
+  else go("groups");
+};
+$("langBtn").onclick=()=>{ S.lang = S.lang==="th"?"en":"th"; render(); };
+$("cartBtn").onclick=()=>go("cart");
+
+(async function main(){
+  await loadCatalogue();
+  try{
+    if(LIFF_ID.indexOf("PASTE")!==0){
+      await liff.init({liffId:LIFF_ID});
+      if(liff.isLoggedIn()) S.profile = await liff.getProfile();
+    }
+  }catch(e){}
+  render();
+})();
 </script>
 </body>
 </html>
