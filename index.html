@@ -65,6 +65,19 @@ main{flex:1;overflow-y:auto;padding:14px 14px calc(20px + var(--pad-b))}
 .totals{margin-top:16px;padding-top:14px;border-top:2px solid var(--line);
   display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700}
 .empty{text-align:center;color:var(--muted);padding:50px 0}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px}
+.fld input,.fld textarea{width:100%;padding:12px;font-size:1rem;border:1px solid var(--line);
+  border-radius:10px;background:var(--bg);color:var(--fg);font-family:inherit}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);color:var(--fg);font-size:.9rem;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.cons{display:flex;gap:10px;align-items:flex-start;font-size:.82rem;color:var(--muted);line-height:1.45}
+.cons input{margin-top:3px;width:18px;height:18px;flex:none}
+.sumline{display:flex;justify-content:space-between;padding:7px 0;font-size:.92rem;color:var(--muted)}
+.rvw{margin-top:18px;padding:12px;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;font-size:.88rem;line-height:1.6}
 .rm{color:var(--danger);background:none;border:0;font-size:.78rem;cursor:pointer;padding:4px}
 </style>
 </head>
@@ -81,8 +94,13 @@ main{flex:1;overflow-y:auto;padding:14px 14px calc(20px + var(--pad-b))}
 
 <script>
 /* ============ PASTE YOUR TWO VALUES HERE ============ */
-const LIFF_ID     = "2011686391-JIg8JWF5";
-const CATALOGUE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm-tEM7lP1s0nlhaXr-rBmyK5-pGgWqWf8YcBxFm4OOWLDI3T5vEgB7Fk-NjKRwXF3Dy2nbpKzORum/pub?gid=1657199915&single=true&output=csv";
+const LIFF_ID     = "PASTE_YOUR_LIFF_ID_HERE";
+const CATALOGUE_URL = "PASTE_YOUR_CATALOGUE_CSV_URL_HERE";
+const MAKE_WEBHOOK_URL = "PASTE_YOUR_MAKE_S1_WEBHOOK_URL_HERE";
+
+/* Shipping tiers — mirror of Config!B13:B20. If you change Config, change these too. */
+const SHIP = [[2.5,60],[6,90],[11,150],[22,280]];
+const FREIGHT_OVER = 22;
 /* =================================================== */
 
 /* Fallback catalogue — used only if the live fetch fails.
@@ -115,16 +133,47 @@ const T = {
       cart:"ตะกร้าสินค้า",add:"ใส่ตะกร้า",cont:"เลือกสินค้าต่อ",checkout:"ดำเนินการสั่งซื้อ",
       empty:"ยังไม่มีสินค้าในตะกร้า",total:"รวม",each:"ต่อชิ้น",items:"รายการ",
       offline:"ใช้ราคาสำรอง ราคาจริงจะยืนยันอีกครั้งทางแชท",
-      nol:"เปิดจากแอป LINE เพื่อสั่งซื้อ",soon:"ขั้นตอนถัดไปจะเปิดใช้เร็วๆ นี้",rm:"ลบ"},
+      nol:"เปิดจากแอป LINE เพื่อสั่งซื้อ",rm:"ลบ",
+      details:"ข้อมูลผู้สั่งซื้อ",review:"ตรวจสอบคำสั่งซื้อ",otype:"ประเภทการสั่งซื้อ",
+      retail:"ซื้อปลีก",whole:"ซื้อส่ง (50 ชิ้นขึ้นไป)",nm:"ชื่อ-นามสกุล",ph:"เบอร์โทรศัพท์",
+      addr:"ที่อยู่จัดส่ง พร้อมรหัสไปรษณีย์",note:"หมายเหตุเพิ่มเติม",
+      consent:"ยินยอมให้เก็บและใช้ข้อมูล ชื่อ เบอร์โทร ที่อยู่ เพื่อการจัดส่งและติดต่อเรื่องคำสั่งซื้อเท่านั้น",
+      ship:"ค่าจัดส่ง",sub:"ยอดสินค้า",freight:"แจ้งค่าส่งภายหลัง",next:"ถัดไป",
+      submit:"ยืนยันคำสั่งซื้อ",back2:"แก้ไข",
+      wnote:"ทีมงานจะติดต่อกลับพร้อมใบเสนอราคาภายใน 24 ชม. ราคาขายส่งไม่แสดงในหน้านี้",
+      fnote:"น้ำหนักเกิน 22 กก. ทีมงานจะแจ้งค่าขนส่งให้ทราบก่อนชำระเงิน",
+      errnm:"กรุณากรอกชื่อ",errph:"เบอร์โทรไม่ถูกต้อง เช่น 0812345678",
+      erraddr:"กรุณากรอกที่อยู่",errcon:"กรุณายอมรับเงื่อนไขข้อมูลส่วนบุคคล",
+      sending:"กำลังส่ง…",okttl:"รับคำสั่งซื้อแล้ว",
+      okmsg:"ทีมงานจะแจ้งยอดรวมและ QR พร้อมเพย์ให้ทางแชท LINE ครับ",
+      okw:"ทีมงานจะติดต่อกลับพร้อมใบเสนอราคาครับ",
+      failttl:"ส่งไม่สำเร็จ",failmsg:"กรุณาลองใหม่ หรือทักแชทหาแอดมินได้เลยครับ",
+      notwired:"ยังไม่ได้เชื่อมต่อระบบ (ขั้นตอน 11D)",close:"ปิด"},
   en:{pick:"Choose a category",picktype:"Choose a type",picksize:"Choose a size",qty:"Quantity",
       cart:"Your cart",add:"Add to cart",cont:"Keep shopping",checkout:"Continue to checkout",
       empty:"Your cart is empty",total:"Total",each:"each",items:"items",
       offline:"Using backup prices. Final price confirmed in chat.",
-      nol:"Open inside LINE to place an order",soon:"Next step coming soon",rm:"Remove"}
+      nol:"Open inside LINE to place an order",rm:"Remove",
+      details:"Your details",review:"Review your order",otype:"Order type",
+      retail:"Retail",whole:"Wholesale (50+ units)",nm:"Full name",ph:"Phone number",
+      addr:"Delivery address with postcode",note:"Additional notes",
+      consent:"I consent to my name, phone and address being used for delivery and order communication only",
+      ship:"Shipping",sub:"Items",freight:"Quoted separately",next:"Next",
+      submit:"Place order",back2:"Edit",
+      wnote:"We will reply with a quotation within 24 hours. Wholesale prices are not shown here.",
+      fnote:"Over 22 kg — we will confirm freight cost before payment",
+      errnm:"Please enter your name",errph:"Invalid phone, e.g. 0812345678",
+      erraddr:"Please enter your address",errcon:"Please accept the data consent",
+      sending:"Sending…",okttl:"Order received",
+      okmsg:"We will send your total and PromptPay QR in the LINE chat.",
+      okw:"We will contact you with a quotation.",
+      failttl:"Could not send",failmsg:"Please try again, or message us in chat.",
+      notwired:"Not connected yet (step 11D)",close:"Close"}
 };
 
 const S = {lang:"th", screen:"groups", group:null, line:null, sku:null, qty:1,
-           rows:[], cart:[], offline:false, profile:null};
+           rows:[], cart:[], offline:false, profile:null, idToken:null,
+           f:{otype:"RETAIL",nm:"",ph:"",addr:"",note:"",consent:false}, err:"", sending:false};
 
 const $ = (id)=>document.getElementById(id);
 const t = (k)=>T[S.lang][k];
@@ -176,6 +225,10 @@ const oName  = (r)=>S.lang==="th"?r.oTH:r.oEN;
 const full   = (r)=>lName(r)+" · "+oName(r);
 const cartQty= ()=>S.cart.reduce((n,i)=>n+i.qty,0);
 const cartSum= ()=>S.cart.reduce((n,i)=>n+i.qty*i.price,0);
+
+const cartWeight=()=>S.cart.reduce((n,i)=>n+i.qty*i.weight,0);
+function shipFor(w){ if(w>FREIGHT_OVER) return null; for(const [mx,fee] of SHIP){ if(w<=mx) return fee; } return null; }
+function grandTotal(){ const s=shipFor(cartWeight()); return cartSum() + (s||0); }
 
 function go(screen){ S.screen=screen; render(); }
 
@@ -237,14 +290,65 @@ function render(){
         '<button class="mini" onclick="bump(\''+i.sku+'\',1)">+</button>'+
         '<span class="price">'+baht(i.qty*i.price)+'</span></div>').join("")
         + '<div class="totals"><span>'+t("total")+'</span><span>'+baht(cartSum())+'</span></div>'
-        + '<div style="margin-top:18px"><button class="primary" onclick="alert(t_soon())">'+t("checkout")+'</button>'
+        + '<div style="margin-top:18px"><button class="primary" onclick="go(\'checkout\')">'+t("checkout")+'</button>'
         + '<button class="ghost" onclick="go(\'groups\')">'+t("cont")+'</button></div>';
     }
+  }
+  else if(S.screen==="checkout"){
+    $("title").textContent = t("details");
+    const f=S.f, w=cartWeight(), wholesale=(f.otype==="WHOLESALE");
+    h = (S.err?'<div class="notice" style="background:#fde8e6;color:#b42318">'+esc(S.err)+'</div>':'')
+      + '<div class="fld"><label>'+t("otype")+'</label><div class="seg">'
+      + '<button class="'+(wholesale?'':'on')+'" onclick="setType(\'RETAIL\')">'+t("retail")+'</button>'
+      + '<button class="'+(wholesale?'on':'')+'" onclick="setType(\'WHOLESALE\')">'+t("whole")+'</button></div></div>'
+      + (wholesale?'<div class="notice">'+t("wnote")+'</div>':'')
+      + (!wholesale && w>FREIGHT_OVER?'<div class="notice">'+t("fnote")+'</div>':'')
+      + '<div class="fld"><label>'+t("nm")+'</label><input id="f_nm" value="'+esc(f.nm)+'" autocomplete="name"></div>'
+      + '<div class="fld"><label>'+t("ph")+'</label><input id="f_ph" type="tel" inputmode="numeric" value="'+esc(f.ph)+'" placeholder="0812345678"></div>'
+      + '<div class="fld"><label>'+t("addr")+'</label><textarea id="f_addr" rows="3">'+esc(f.addr)+'</textarea></div>'
+      + '<div class="fld"><label>'+t("note")+'</label><textarea id="f_note" rows="2">'+esc(f.note)+'</textarea></div>'
+      + '<label class="cons"><input type="checkbox" id="f_con"'+(f.consent?' checked':'')+'><span>'+t("consent")+'</span></label>'
+      + '<button class="primary" style="margin-top:16px" onclick="toReview()">'+t("next")+'</button>';
+  }
+  else if(S.screen==="review"){
+    $("title").textContent = t("review");
+    const f=S.f, w=cartWeight(), wholesale=(f.otype==="WHOLESALE"), ship=shipFor(w);
+    h = S.cart.map(i=>'<div class="cartItem"><span class="grow"><span class="nm">'+esc(i.name)+'</span>'
+        +'<span class="sub">'+i.qty+' &times; '+baht(i.price)+'</span></span>'
+        +'<span class="price">'+baht(i.qty*i.price)+'</span></div>').join("");
+    if(wholesale){
+      h += '<div class="notice" style="margin-top:14px">'+t("wnote")+'</div>';
+    } else {
+      h += '<div class="sumline"><span>'+t("sub")+'</span><span>'+baht(cartSum())+'</span></div>'
+         + '<div class="sumline"><span>'+t("ship")+' ('+w.toFixed(1)+' kg)</span><span>'
+         + (ship===null?t("freight"):baht(ship))+'</span></div>'
+         + '<div class="totals"><span>'+t("total")+'</span><span>'
+         + (ship===null?baht(cartSum())+" +":baht(grandTotal()))+'</span></div>'
+         + (ship===null?'<div class="notice" style="margin-top:10px">'+t("fnote")+'</div>':'');
+    }
+    h += '<div class="rvw"><div><b>'+esc(f.nm)+'</b></div><div>'+esc(f.ph)+'</div>'
+       + (f.addr?'<div>'+esc(f.addr)+'</div>':'') + (f.note?'<div class="sub">'+esc(f.note)+'</div>':'') + '</div>'
+       + '<button class="primary" style="margin-top:18px" onclick="submitOrder()"'+(S.sending?' disabled':'')+'>'
+       + (S.sending?t("sending"):t("submit"))+'</button>'
+       + '<button class="ghost" onclick="go(\'checkout\')">'+t("back2")+'</button>';
+  }
+  else if(S.screen==="done"){
+    $("title").textContent = "CharTech";
+    $("back").style.visibility="hidden";
+    h = '<div class="empty"><div style="font-size:2.6rem">&#127793;</div>'
+      + '<h2 style="margin:10px 0 6px;color:var(--fg)">'+t("okttl")+'</h2>'
+      + '<p>'+(S.f.otype==="WHOLESALE"?t("okw"):t("okmsg"))+'</p>'
+      + '<button class="ghost" style="margin-top:20px" onclick="closeApp()">'+t("close")+'</button></div>';
+  }
+  else if(S.screen==="fail"){
+    $("title").textContent = "CharTech";
+    h = '<div class="empty"><h2 style="margin:10px 0 6px;color:var(--danger)">'+t("failttl")+'</h2>'
+      + '<p>'+esc(S.err||t("failmsg"))+'</p>'
+      + '<button class="primary" style="margin-top:20px" onclick="go(\'review\')">'+t("back2")+'</button></div>';
   }
   m.innerHTML = h;
 }
 
-function t_soon(){ return t("soon"); }
 function pickGroup(g){ S.group=g; const l=lines(g); if(l.length===1){ pickLine(l[0].lEN); } else go("lines"); }
 function pickLine(l){ S.line=l; const o=opts(S.group,l); if(o.length===1){ pickSku(o[0].sku); } else go("options"); }
 function pickSku(s){ S.sku=s; S.qty=1; go("qty"); }
@@ -252,7 +356,9 @@ function setQty(d){ S.qty=Math.max(1,S.qty+d); render(); }
 function typeQty(v){ const n=parseInt(v,10); S.qty=(isNaN(n)||n<1)?1:n; render(); }
 
 $("back").onclick=()=>{
-  if(S.screen==="cart") go("groups");
+  if(S.screen==="review") go("checkout");
+  else if(S.screen==="checkout") go("cart");
+  else if(S.screen==="cart") go("groups");
   else if(S.screen==="qty") go(opts(S.group,S.line).length>1?"options":(lines(S.group).length>1?"lines":"groups"));
   else if(S.screen==="options") go(lines(S.group).length>1?"lines":"groups");
   else go("groups");
@@ -260,12 +366,61 @@ $("back").onclick=()=>{
 $("langBtn").onclick=()=>{ S.lang = S.lang==="th"?"en":"th"; render(); };
 $("cartBtn").onclick=()=>go("cart");
 
+
+function readForm(){
+  const g=(id)=>{const e=$(id);return e?e.value.trim():"";};
+  S.f.nm=g("f_nm"); S.f.ph=g("f_ph"); S.f.addr=g("f_addr"); S.f.note=g("f_note");
+  const c=$("f_con"); if(c) S.f.consent=c.checked;
+}
+function setType(v){ readForm(); S.f.otype=v; render(); }
+function toReview(){
+  readForm(); S.err="";
+  if(!S.f.nm) S.err=t("errnm");
+  else if(!/^0[0-9]{8,9}$/.test(S.f.ph)) S.err=t("errph");
+  else if(S.f.otype==="RETAIL" && !S.f.addr) S.err=t("erraddr");
+  else if(!S.f.consent) S.err=t("errcon");
+  if(S.err){ render(); window.scrollTo(0,0); return; }
+  go("review");
+}
+function payload(){
+  const w=cartWeight(), ship=shipFor(w);
+  return {
+    source:"liff", idToken:S.idToken||"", userId:(S.profile&&S.profile.userId)||"",
+    displayName:(S.profile&&S.profile.displayName)||"", lang:S.lang,
+    orderType:S.f.otype, name:S.f.nm, phone:S.f.ph, address:S.f.addr, note:S.f.note,
+    consent:S.f.consent,
+    items:S.cart.map(i=>({sku:i.sku,name:i.name,qty:i.qty,price:i.price,weight:i.weight})),
+    subtotal:cartSum(), weight:Math.round(w*100)/100,
+    shipping:(ship===null?0:ship), freightQuote:(ship===null),
+    total:(ship===null?cartSum():grandTotal())
+  };
+}
+async function submitOrder(){
+  if(S.sending) return;
+  const body = payload();
+  if(MAKE_WEBHOOK_URL.indexOf("PASTE")===0){
+    console.log("PAYLOAD (not sent):", JSON.stringify(body,null,2));
+    alert(t("notwired")+"\n\n"+JSON.stringify(body,null,2).slice(0,900));
+    return;
+  }
+  S.sending=true; render();
+  try{
+    const res = await fetch(MAKE_WEBHOOK_URL,{method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    S.sending=false; S.cart=[]; go("done");
+  }catch(e){
+    S.sending=false; S.err=String(e); go("fail");
+  }
+}
+function closeApp(){ try{ if(liff.isInClient()) liff.closeWindow(); }catch(e){} }
+
 (async function main(){
   await loadCatalogue();
   try{
     if(LIFF_ID.indexOf("PASTE")!==0){
       await liff.init({liffId:LIFF_ID});
-      if(liff.isLoggedIn()) S.profile = await liff.getProfile();
+      if(liff.isLoggedIn()){ S.profile = await liff.getProfile(); S.idToken = liff.getIDToken(); }
     }
   }catch(e){}
   render();
