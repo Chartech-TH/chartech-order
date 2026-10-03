@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CharTech · ราคาสินค้า / Price list</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --kraft:#E8D9BE; --sheet:#FBF8F2; --ink:#22201C; --muted:#6B5E4B;
+  --leader:#CDB894; --leaf:#2F6B3F; --leaf-fg:#FFFFFF; --warn:#8A5A00;
+  --pad-t:env(safe-area-inset-top,0px); --pad-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root{
+  --kraft:#1B1A17; --sheet:#24221E; --ink:#EFE7D8; --muted:#A89A82;
+  --leader:#3E3933; --leaf:#6FB083; --leaf-fg:#0F1A12; --warn:#F0C674;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--kraft);color:var(--ink);
+  font-family:"IBM Plex Sans Thai Looped",-apple-system,"Noto Sans Thai",Tahoma,sans-serif;
+  line-height:1.55;padding:calc(12px + var(--pad-t)) 12px calc(96px + var(--pad-b))}
+.sheet{max-width:560px;margin:0 auto;background:var(--sheet);border-radius:6px;
+  padding:22px 20px 26px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{font-weight:700;font-size:.95rem;color:var(--leaf);letter-spacing:.01em}
+.lang{border:1.5px solid var(--leaf);background:none;color:var(--leaf);border-radius:999px;
+  padding:3px 12px;font:inherit;font-size:.8rem;font-weight:600;cursor:pointer}
+h1{font-size:2rem;line-height:1.2;margin:0 0 6px;font-weight:700}
+.intro{color:var(--muted);font-size:.92rem;margin:0 0 22px;max-width:34em}
+.group{margin-top:26px}
+.group h2{font-size:1.25rem;margin:0 0 4px;padding-bottom:6px;border-bottom:3px solid var(--leaf)}
+.line h3{font-size:.95rem;font-weight:600;margin:14px 0 2px;color:var(--ink)}
+.opt{display:flex;align-items:baseline;gap:8px;padding:5px 0;font-size:.95rem}
+.opt .nm{color:var(--muted);white-space:nowrap}
+.opt .dots{flex:1;border-bottom:2px dotted var(--leader);transform:translateY(-4px);min-width:16px}
+.opt .pr{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ship{margin-top:30px;padding:16px;border:1.5px dashed var(--leader);border-radius:6px}
+.ship h2{font-size:1.05rem;margin:0 0 6px}
+.ship .opt .nm{color:var(--ink)}
+.small{font-size:.84rem;color:var(--muted);margin:8px 0 0}
+.note{margin-top:18px;font-size:.9rem}
+.status{text-align:center;color:var(--muted);padding:40px 0}
+.status button{margin-top:12px;border:1.5px solid var(--leaf);background:none;color:var(--leaf);
+  border-radius:6px;padding:8px 16px;font:inherit;font-weight:600;cursor:pointer}
+.cta{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + var(--pad-b));
+  background:linear-gradient(to top,var(--kraft) 70%,transparent)}
+.cta a{display:block;max-width:560px;margin:0 auto;text-align:center;text-decoration:none;
+  background:var(--leaf);color:var(--leaf-fg);font-weight:700;font-size:1.05rem;
+  border-radius:6px;padding:14px}
+.cta[hidden]{display:none}
+a:focus-visible,button:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <div class="top">
+    <span class="brand">CharTech</span>
+    <button class="lang" id="langBtn">EN</button>
+  </div>
+  <h1 id="title"></h1>
+  <p class="intro" id="intro"></p>
+  <div id="list"><div class="status" id="loading"></div></div>
+</main>
+<div class="cta" id="cta" hidden><a id="orderLink" href="#"></a></div>
+
+<script>
+/* =========== PASTE YOUR TWO VALUES HERE (copy lines 97-98 of index.html) =========== */
+const LIFF_ID     = "PASTE_YOUR_LIFF_ID_HERE";
+const CATALOGUE_URL = "PASTE_YOUR_CATALOGUE_CSV_URL_HERE";
+/* ================================================================================== */
+
+/* Shipping tiers - mirror of Config!B13:B20 and of index.html. If you change Config, change these too. */
+const SHIP = [[2.5,60],[6,90],[11,130],[22,185]];
+const FREIGHT_OVER = 22;
+const REMOTE_FEE = 50;
+
+const T = {
+  th:{title:"ราคาสินค้า",
+      intro:"ถ่าน น้ำส้มควันไม้ และของใช้ในสวน จากวนเกษตรกรีนเทค ลำปาง ผลิตจากการสางป่าเพื่อเปิดแสง",
+      loading:"กำลังโหลดราคา…",
+      fail:"โหลดราคาไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่",retry:"ลองใหม่",
+      ship:"ค่าจัดส่งทั่วไทย",shipBy:"คิดจากน้ำหนักรวมของคำสั่งซื้อ",
+      upto:"ไม่เกิน",kg:"กก.",over:"เกิน",quote:"แจ้งในแชท",
+      remote:"พื้นที่เกาะและพื้นที่ห่างไกล บวกเพิ่ม ฿",
+      whole:"ซื้อส่ง 50 ชิ้นขึ้นไป เลือก \"ซื้อส่ง\" ในหน้าสั่งซื้อ ทีมงานจะส่งใบเสนอราคาภายใน 24 ชม.",
+      ask:"มีคำถาม พิมพ์ข้อความในแชท CharTech ได้เลย",
+      order:"สั่งซื้อสินค้า",other:"EN"},
+  en:{title:"Price list",
+      intro:"Charcoal, wood vinegar and garden goods from GreenTech Agroforestry, Lampang, made from thinning the forest to let the light in.",
+      loading:"Loading prices…",
+      fail:"Prices didn't load. Check your connection and try again.",retry:"Try again",
+      ship:"Shipping anywhere in Thailand",shipBy:"Based on the total weight of your order",
+      upto:"Up to",kg:"kg",over:"Over",quote:"quoted in chat",
+      remote:"Islands and remote areas: add ฿",
+      whole:"Buying 50 or more? Choose \"Wholesale\" on the order page and we'll send a quote within 24 hours.",
+      ask:"Questions? Message us in the CharTech chat.",
+      order:"Order now",other:"ไทย"}
+};
+
+let lang = (function(){
+  try{ const s = localStorage.getItem("ct_lang"); if(s==="th"||s==="en") return s; }catch(e){}
+  return /^th/i.test(navigator.language||"th") ? "th" : "en";
+})();
+let rows = null, failed = false;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const baht = n => "฿" + (n % 1 ? n.toFixed(2) : n.toLocaleString("en-US"));
+
+function parseCSV(txt){
+  const out=[]; let row=[], cur="", q=false;
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(q){ if(c==='"'){ if(txt[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else if(c==='"') q=true;
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"){ row.push(cur); out.push(row); row=[]; cur=""; }
+    else if(c!=="\r") cur+=c;
+  }
+  if(cur!==""||row.length){ row.push(cur); out.push(row); }
+  return out;
+}
+function toRows(arr){
+  return arr.filter(r=>r.length>=10 && r[0] && r[0]!=="SKU").map(r=>({
+    gTH:r[1], gEN:r[2], lTH:r[3], lEN:r[4], oTH:r[5], oEN:r[6],
+    price:parseFloat(String(r[7]).replace(/[^0-9.]/g,""))||0,
+    sort:parseInt(r[9],10)||999
+  })).sort((a,b)=>a.sort-b.sort);
+}
+async function load(){
+  failed=false; rows=null; render();
+  try{
+    if(CATALOGUE_URL.indexOf("PASTE")===0) throw new Error("no url");
+    const res = await fetch(CATALOGUE_URL,{cache:"no-store"});
+    if(!res.ok) throw new Error(res.status);
+    const r = toRows(parseCSV(await res.text()));
+    if(!r.length) throw new Error("empty");
+    rows = r;
+  }catch(e){ failed = true; }
+  render();
+}
+
+function render(){
+  const t = T[lang], th = lang==="th";
+  document.documentElement.lang = lang;
+  $("langBtn").textContent = t.other;
+  $("title").textContent = t.title;
+  $("intro").textContent = t.intro;
+  if(LIFF_ID.indexOf("PASTE")!==0){
+    $("orderLink").href = "https://liff.line.me/" + LIFF_ID;
+    $("orderLink").textContent = t.order;
+    $("cta").hidden = false;
+  }
+  if(failed){
+    $("list").innerHTML = '<div class="status">'+esc(t.fail)+'<br><button onclick="load()">'+esc(t.retry)+'</button></div>';
+    return;
+  }
+  if(!rows){ $("list").innerHTML = '<div class="status">'+esc(t.loading)+'</div>'; return; }
+
+  let html = "", g = null, l = null;
+  rows.forEach(r=>{
+    if(r.gEN!==g){
+      if(g!==null) html += '</div></section>';
+      g = r.gEN; l = null;
+      html += '<section class="group"><h2>'+esc(th?r.gTH:r.gEN)+'</h2><div>';
+    }
+    if(r.lEN!==l){
+      l = r.lEN;
+      html += '<div class="line"><h3>'+esc(th?r.lTH:r.lEN)+'</h3></div>';
+    }
+    html += '<div class="opt"><span class="nm">'+esc(th?r.oTH:r.oEN)+'</span><span class="dots"></span><span class="pr">'+baht(r.price)+'</span></div>';
+  });
+  if(g!==null) html += '</div></section>';
+
+  html += '<section class="ship"><h2>'+esc(t.ship)+'</h2><p class="small" style="margin:0 0 6px">'+esc(t.shipBy)+'</p>';
+  SHIP.forEach(s=>{
+    html += '<div class="opt"><span class="nm">'+esc(t.upto)+' '+s[0]+' '+esc(t.kg)+'</span><span class="dots"></span><span class="pr">'+baht(s[1])+'</span></div>';
+  });
+  html += '<div class="opt"><span class="nm">'+esc(t.over)+' '+FREIGHT_OVER+' '+esc(t.kg)+'</span><span class="dots"></span><span class="pr">'+esc(t.quote)+'</span></div>';
+  html += '<p class="small">'+esc(t.remote)+REMOTE_FEE+'</p></section>';
+  html += '<p class="note">'+esc(t.whole)+'</p><p class="small">'+esc(t.ask)+'</p>';
+  $("list").innerHTML = html;
+}
+
+$("langBtn").onclick = ()=>{
+  lang = lang==="th" ? "en" : "th";
+  try{ localStorage.setItem("ct_lang",lang); }catch(e){}
+  render();
+};
+load();
+</script>
+</body>
+</html>
